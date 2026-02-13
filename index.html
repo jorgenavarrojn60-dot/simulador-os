@@ -301,9 +301,6 @@ texto += `<p>Te faltan: ${f.faltante}</p>`;
 texto += `<p>Ritmo actual: ${ritmoActual} por día trabajado</p>`;
 texto += `<p>Ritmo necesario promedio: ${f.ritmoNecesario} por día restante</p>`;
 
-    // ===== APLICAR SIMULACIÓN A TODAS LAS FORMAS =====
-texto = agregarSimulacionDescansos(texto, f.faltante);
-
 // ================= PLAN INTELIGENTE FORMA 2 (100 TOTAL + 76 OS) =================
 if(f.nombre === "Forma 2" && f.elegible){
 
@@ -317,7 +314,7 @@ let otFaltantes = Math.max(0, totalFaltante - osFaltantes);
 if(totalFaltante > 0 && diasLaboralesRestantes > 0){
 
 let baseDiaria = 4;
-let serviciosBase = diasLaboralesRestantes * baseDiaria;
+    let serviciosBase = diasLaboralesRestantes * baseDiaria;
 let extraNecesarios = totalFaltante - serviciosBase;
 
 texto += `<p style="color:#0055aa"><b>Plan para llegar a 100 servicios (mínimo 76 OS):</b></p>`;
@@ -427,6 +424,9 @@ let bonoEstimado = rol * porcentaje;
 texto += `<p style="color:green">Bono proporcional estimado: $${bonoEstimado.toFixed(0)}</p>`;
 }
 
+// ===== AGREGAR SIMULACIÓN AL FINAL DE CADA FORMA =====
+texto = agregarSimulacionDescansos(texto, f.faltante);
+
 texto += `</div>`;
 return texto;
 }
@@ -467,7 +467,7 @@ resultado += generarResumen(f);
 
 document.getElementById("resultado").innerHTML = resultado;
 }
-</script>
+</script>    
 
 </body>
 </html>
