@@ -252,61 +252,56 @@ texto += `<p>Te faltan: ${f.faltante}</p>`;
 texto += `<p>Ritmo actual: ${ritmoActual} por día trabajado</p>`;
 texto += `<p>Ritmo necesario promedio: ${f.ritmoNecesario} por día restante</p>`;
 
-// ================= PLAN ENTERO FORMA 2 (76 OS) =================
+// ================= PLAN INTELIGENTE FORMA 2 (100 TOTAL + 76 OS) =================
 if(f.nombre === "Forma 2" && f.elegible){
 
+let metaTotal = 100;
 let metaOS = 76;
-let faltanOS = metaOS - os;
 
-if(faltanOS > 0 && diasLaboralesRestantes > 0){
+let osFaltantes = Math.max(0, metaOS - os);
+let totalFaltante = Math.max(0, metaTotal - (os + ot));
+let otFaltantes = Math.max(0, totalFaltante - osFaltantes);
 
-let minimo = diasLaboralesRestantes * 4;
-let maximo5 = diasLaboralesRestantes * 5;
-let maximo6 = diasLaboralesRestantes * 6;
+if(totalFaltante > 0 && diasLaboralesRestantes > 0){
 
-texto += `<p style="color:#0055aa"><b>Plan para llegar a 76 OS:</b></p>`;
-texto += `<p>Te faltan ${faltanOS} OS.</p>`;
+let baseDiaria = 4;
+let serviciosBase = diasLaboralesRestantes * baseDiaria;
+let extraNecesarios = totalFaltante - serviciosBase;
+
+texto += `<p style="color:#0055aa"><b>Plan para llegar a 100 servicios (mínimo 76 OS):</b></p>`;
+texto += `<p>Te faltan ${osFaltantes} OS y ${otFaltantes} OT.</p>`;
+texto += `<p>Total faltante: <b>${totalFaltante}</b> servicios.</p>`;
 texto += `<p>Días laborales restantes: <b>${diasLaboralesRestantes}</b></p>`;
 
-if(faltanOS > maximo6){
-
-texto += `<p style="color:red">
-❌ Ni haciendo 6 OS todos los días llegarías a 76.
-</p>`;
-
-}
-else if(faltanOS <= minimo){
+if(extraNecesarios <= 0){
 
 texto += `<p style="color:green">
-✅ ${diasLaboralesRestantes} días haciendo 4 OS son suficientes.
+✅ Con ${diasLaboralesRestantes} días haciendo 4 servicios diarios combinando OS y OT llegas a la meta.
 </p>`;
 
 }
-else if(faltanOS <= maximo5){
+else if(extraNecesarios <= diasLaboralesRestantes){
 
-let diasDe5 = faltanOS - minimo;
+let diasDe5 = extraNecesarios;
 let diasDe4 = diasLaboralesRestantes - diasDe5;
 
 texto += `<p style="color:green">
-✅ Necesitas <b>${diasDe5} día(s) haciendo 5 OS</b> 
-y <b>${diasDe4} día(s) haciendo 4 OS</b>.
+✅ Necesitas <b>${diasDe5} día(s) haciendo 5 servicios</b> 
+y <b>${diasDe4} día(s) haciendo 4 servicios</b> combinando OS y OT para llegar a la meta.
 </p>`;
 
 }
 else{
 
-let diasDe6 = faltanOS - maximo5;
-let diasDe5 = diasLaboralesRestantes - diasDe6;
-
-texto += `<p style="color:orange">
-⚠ Modo TURBO:<br>
-<b>${diasDe6} día(s) haciendo 6 OS</b> 
-y <b>${diasDe5} día(s) haciendo 5 OS</b>.
+texto += `<p style="color:red">
+❌ Ni haciendo 5 servicios diarios todos los días llegarías a la meta.
 </p>`;
 
 }
+
 }
 }
+
 
 // ================= PLAN ENTERO FORMA 4 (120 MIXTOS - TURBO) =================
 if(f.nombre === "Forma 4" && f.elegible){
