@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Calculadora de Bono Solucionika</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#f4f6f9;
+    padding:20px;
+}
+.container{
+    max-width:500px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+h2{
+    text-align:center;
+}
+input, select{
+    width:100%;
+    padding:8px;
+    margin-bottom:10px;
+    border-radius:6px;
+    border:1px solid #ccc;
+}
+button{
+    width:100%;
+    padding:10px;
+    background:#0b5ed7;
+    color:white;
+    border:none;
+    border-radius:8px;
+    font-size:16px;
+}
+.result{
+    margin-top:15px;
+    padding:10px;
+    background:#f1f1f1;
+    border-radius:8px;
+}
+.good{color:green;}
+.bad{color:red;}
+</style>
+
+<style>
+.opcion {
+  padding:15px;
+  border-radius:12px;
+  margin-bottom:15px;
+  background:#f9f9f9;
+}
+
+.mejor {
+  background:#e6ffe6;
+  border:3px solid #00aa00;
+  box-shadow:0 0 15px rgba(0,170,0,0.3);
+  transform:scale(1.02);
+}
+
+.segunda {
+  background:#fff8e6;
+  border:2px solid #ffaa00;
+  box-shadow:0 0 10px rgba(255,170,0,0.3);
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+<h2>Calculadora de Bono</h2>
+
+<select id="rol">
+<option value="8000">Técnico ($8,000)</option>
+<option value="4000">Auxiliar ($4,000)</option>
+</select>
+
+<label>Día actual</label>
+<input type="number" id="dia">
+
+<label>Días del mes</label>
+<input type="number" id="diasMes">
+
+<label>Días descansados hasta hoy</label>
+<input type="number" id="descansados">
+
+<label>Días de descanso que faltan</label>
+<input type="number" id="descansosFaltantes">
+
+<label>OS acumuladas</label>
+<input type="number" id="os">
+
+<label>OT acumuladas</label>
+<input type="number" id="ot">
+
+<label>Instalaciones / CDOM</label>
+<input type="number" id="inst">
+
+<label><input type="checkbox" id="proporcional"> Calcular bono proporcional</label>
+
+<button onclick="calcular()">Calcular</button>
+
+<div class="result" id="resultado"></div>
+</div>
+<script>
+function calcular(){
+
+let rol = parseFloat(document.getElementById("rol").value) || 0;
+let dia = parseInt(document.getElementById("dia").value) || 0;
+let diasMes = parseInt(document.getElementById("diasMes").value) || 0;
+let os = parseInt(document.getElementById("os").value) || 0;
+let ot = parseInt(document.getElementById("ot").value) || 0;
+let inst = parseInt(document.getElementById("inst").value) || 0;
+let descansados = parseInt(document.getElementById("descansados").value) || 0;
+let descansosFaltantes = parseInt(document.getElementById("descansosFaltantes").value) || 0;
+let proporcional = document.getElementById("proporcional").checked;
+
+if(dia === 0 || diasMes === 0){
+document.getElementById("resultado").innerHTML = "Completa los datos del mes.";
+return;
+}
+
+let total = os + ot;
+let promedioBase = 4;
+let maxOTporDia = 4;
+
+let descansosTotales = descansados + descansosFaltantes;
+let diasRestantesCalendario = diasMes - dia;
+let diasLaboralesRestantes = diasRestantesCalendario - descansosFaltantes;
+let diasTrabajadosReales = dia - descansados;
+let diasLaboralesTotales = diasTrabajadosReales + diasLaboralesRestantes;
+
+if(diasTrabajadosReales <= 0){
+document.getElementById("resultado").innerHTML = "Verifica los días de descanso.";
+return;
+}
+
+let formas = [
+{
+nombre:"Forma 1",
+meta:92,
+avance: os,
+detalle:"92 OS + mínimo 30 instalaciones (NO debes tener OT)",
+valida: os >= 92 && inst >= 30 && ot === 0,
+elegible: ot === 0
+},
+{
+nombre:"Forma 2",
+meta:100,
+avance: total,
+detalle:"100 servicios + mínimo 76 OS",
+valida: total >= 100 && os >= 76,
+elegible: true
+},
+{
+nombre:"Forma 3",
+meta:104,
+avance: ot,
+detalle:"104 OT (máximo 4 por día y máximo 10 OS)",
+valida: ot >= 104 && os <= 10,
+elegible: os <= 10
+},
+{
+nombre:"Forma 4",
+meta:120,
+avance: total,
+detalle:"120 servicios mixtos",
+valida: total >= 120,
+elegible: true
+}
+];
+
+formas.forEach(f=>{
+f.faltante = f.meta - f.avance;
+if(f.faltante < 0) f.faltante = 0;
+f.ritmoNecesario = diasLaboralesRestantes > 0 ? 
+Math.ceil(f.faltante / diasLaboralesRestantes) : 0;
+});
+
+let elegibles = formas.filter(f => f.elegible);
+elegibles.sort((a,b)=> a.ritmoNecesario - b.ritmoNecesario);
+
+let mejor = elegibles[0] || null;
+let segunda = elegibles[1] || null;
+
+function generarRecomendacion(){
+
+if(elegibles.length === 0){
+return "❌ No hay formas elegibles actualmente.";
+}
+
+let recomendada = elegibles.find(f => 
+f.ritmoNecesario <= promedioBase &&
+!(f.nombre === "Forma 3" && f.ritmoNecesario > maxOTporDia)
+);
+
+if(!recomendada){
+recomendada = mejor;
+}
+
+let mensaje = `🤖 <b>Recomendación:</b> Conviene enfocarte en <b>${recomendada.nombre}</b>. `;
+
+if(recomendada.ritmoNecesario <= promedioBase){
+mensaje += `Es viable con tu promedio actual de 4 diarios.`;
+}else{
+mensaje += `Requiere ${recomendada.ritmoNecesario} por día.`;
+}
+
+return mensaje;
+}
+
+function generarResumen(f){
+
+let clase = "opcion";
+let etiqueta = "";
+
+if(mejor && f.nombre === mejor.nombre){
+clase += " mejor";
+etiqueta = "🏆 MÁS CONVENIENTE";
+}
+else if(segunda && f.nombre === segunda.nombre){
+clase += " segunda";
+etiqueta = "🥈 SEGUNDA OPCIÓN";
+}
+
+let ritmoActual = diasTrabajadosReales > 0 ? 
+Math.floor(f.avance / diasTrabajadosReales * 100) / 100 : 0;
+
+let porcentajeAvance = ((f.avance / f.meta) * 100).toFixed(1);
+
+let texto = `<div class="${clase}">`;
+texto += `<h3>${f.nombre} ${etiqueta}</h3>`;
+texto += `<p><b>${f.detalle}</b></p>`;
+
+if(!f.elegible){
+if(f.nombre === "Forma 1"){
+texto += `<p style="color:red"><b>❌ No elegible: ya realizaste al menos 1 OT.</b></p>`;
+}
+if(f.nombre === "Forma 3"){
+texto += `<p style="color:red"><b>❌ No elegible: tienes más de 10 OS.</b></p>`;
+}
+}
+
+texto += `<p>Avance: ${f.avance} / ${f.meta} (${porcentajeAvance}%)</p>`;
+texto += `<p>Te faltan: ${f.faltante}</p>`;
+texto += `<p>Ritmo actual: ${ritmoActual} por día trabajado</p>`;
+texto += `<p>Ritmo necesario promedio: ${f.ritmoNecesario} por día restante</p>`;
+
+// ================= PLAN ENTERO FORMA 2 (76 OS) =================
+if(f.nombre === "Forma 2" && f.elegible){
+
+let metaOS = 76;
+let faltanOS = metaOS - os;
+
+if(faltanOS > 0 && diasLaboralesRestantes > 0){
+
+let minimo = diasLaboralesRestantes * 4;
+let maximo5 = diasLaboralesRestantes * 5;
+let maximo6 = diasLaboralesRestantes * 6;
+
+texto += `<p style="color:#0055aa"><b>Plan para llegar a 76 OS:</b></p>`;
+texto += `<p>Te faltan ${faltanOS} OS.</p>`;
+texto += `<p>Días laborales restantes: <b>${diasLaboralesRestantes}</b></p>`;
+
+if(faltanOS > maximo6){
+
+texto += `<p style="color:red">
+❌ Ni haciendo 6 OS todos los días llegarías a 76.
+</p>`;
+
+}
+else if(faltanOS <= minimo){
+
+texto += `<p style="color:green">
+✅ ${diasLaboralesRestantes} días haciendo 4 OS son suficientes.
+</p>`;
+
+}
+else if(faltanOS <= maximo5){
+
+let diasDe5 = faltanOS - minimo;
+let diasDe4 = diasLaboralesRestantes - diasDe5;
+
+texto += `<p style="color:green">
+✅ Necesitas <b>${diasDe5} día(s) haciendo 5 OS</b> 
+y <b>${diasDe4} día(s) haciendo 4 OS</b>.
+</p>`;
+
+}
+else{
+
+let diasDe6 = faltanOS - maximo5;
+let diasDe5 = diasLaboralesRestantes - diasDe6;
+
+texto += `<p style="color:orange">
+⚠ Modo TURBO:<br>
+<b>${diasDe6} día(s) haciendo 6 OS</b> 
+y <b>${diasDe5} día(s) haciendo 5 OS</b>.
+</p>`;
+
+}
+}
+}
+
+// ================= PLAN ENTERO FORMA 4 (120 MIXTOS - TURBO) =================
+if(f.nombre === "Forma 4" && f.elegible){
+
+let meta = 120;
+let faltanTotal = meta - total;
+
+if(faltanTotal > 0 && diasLaboralesRestantes > 0){
+
+let minimo = diasLaboralesRestantes * 4;
+let maximo5 = diasLaboralesRestantes * 5;
+let maximo6 = diasLaboralesRestantes * 6;
+
+texto += `<p style="color:#0055aa"><b>Plan para llegar a 120 servicios:</b></p>`;
+texto += `<p>Te faltan ${faltanTotal} servicios (OS + OT).</p>`;
+texto += `<p>Días laborales restantes: <b>${diasLaboralesRestantes}</b></p>`;
+
+if(faltanTotal > maximo6){
+
+texto += `<p style="color:red">
+❌ Ni haciendo 6 servicios todos los días llegarías a 120.
+</p>`;
+
+}
+else if(faltanTotal <= minimo){
+
+texto += `<p style="color:green">
+✅ Necesitas 0 días turbo. 
+<b>${diasLaboralesRestantes} días haciendo 4 servicios</b> son suficientes.
+</p>`;
+
+}
+else if(faltanTotal <= maximo5){
+
+let diasDe5 = faltanTotal - minimo;
+let diasDe4 = diasLaboralesRestantes - diasDe5;
+
+texto += `<p style="color:green">
+✅ Necesitas <b>${diasDe5} día(s) haciendo 5 servicios</b> 
+y <b>${diasDe4} día(s) haciendo 4 servicios</b>.
+</p>`;
+
+}
+else{
+
+let diasDe6 = faltanTotal - maximo5;
+let diasDe5 = diasLaboralesRestantes - diasDe6;
+
+texto += `<p style="color:orange">
+⚠ Modo TURBO activado:<br>
+<b>${diasDe6} día(s) haciendo 6 servicios</b> 
+y <b>${diasDe5} día(s) haciendo 5 servicios</b>.
+</p>`;
+
+}
+}
+}
+
+// ================= FIN FORMA 4 =================
+
+
+if(f.valida){
+texto += `<p style="color:green">🎉 Bono logrado - $${rol.toLocaleString()}</p>`;
+}
+
+if(proporcional){
+let proyeccion = ritmoActual * diasLaboralesTotales;
+let porcentaje = proyeccion / f.meta;
+if(porcentaje > 1) porcentaje = 1;
+let bonoEstimado = rol * porcentaje;
+texto += `<p style="color:green">Bono proporcional estimado: $${bonoEstimado.toFixed(0)}</p>`;
+}
+
+texto += `</div>`;
+return texto;
+}
+
+let resultado = "<h2>Análisis Estratégico</h2>";
+resultado += `<div style="background:#eef;padding:10px;border-radius:10px;margin-bottom:15px;">${generarRecomendacion()}</div>`;
+
+// ================= COMPARACIÓN ENTRE LAS 2 MEJORES =================
+if(mejor && segunda){
+
+let esfuerzoMejor = mejor.ritmoNecesario;
+let esfuerzoSegunda = segunda.ritmoNecesario;
+
+let comparacion = "<div style='background:#fff3cd;padding:10px;border-radius:10px;margin-bottom:15px;'>";
+
+comparacion += "<b>📊 Comparación Estratégica:</b><br>";
+
+if(esfuerzoMejor < esfuerzoSegunda){
+comparacion += `La opción <b>${mejor.nombre}</b> exige menor ritmo diario (${esfuerzoMejor}) que ${segunda.nombre} (${esfuerzoSegunda}).`;
+}
+else if(esfuerzoMejor > esfuerzoSegunda){
+comparacion += `La opción <b>${segunda.nombre}</b> exige menor ritmo diario (${esfuerzoSegunda}) que ${mejor.nombre} (${esfuerzoMejor}).`;
+}
+else{
+comparacion += `Ambas opciones exigen el mismo ritmo diario (${esfuerzoMejor}).`;
+}
+
+comparacion += "</div>";
+
+resultado += comparacion;
+}
+
+resultado += "<h2>Comparativa Completa</h2>";
+
+formas.forEach(f=>{
+resultado += generarResumen(f);
+});
+
+document.getElementById("resultado").innerHTML = resultado;
+}
+</script>
+
+</body>
+</html>
