@@ -184,6 +184,55 @@ Math.ceil(f.faltante / diasLaboralesRestantes) : 0;
 });
 
 let elegibles = formas.filter(f => f.elegible);
+
+// ================= FUNCIÓN GLOBAL SIMULACIÓN DESCANSOS =================
+function agregarSimulacionDescansos(textoBase, faltanteServicios){
+
+if(descansosFaltantes <= 0 || faltanteServicios <= 0){
+return textoBase;
+}
+
+let diasSimulados = diasLaboralesRestantes + descansosFaltantes;
+let serviciosBaseSim = diasSimulados * 4;
+let extraSim = faltanteServicios - serviciosBaseSim;
+
+textoBase += `<hr>`;
+textoBase += `<p style="color:#6a0dad"><b>🔎 Simulación trabajando tus ${descansosFaltantes} día(s) de descanso:</b></p>`;
+textoBase += `<p>Total de días disponibles: <b>${diasSimulados}</b></p>`;
+
+if(extraSim <= 0){
+
+let margen = Math.abs(extraSim);
+
+textoBase += `<p style="color:green">
+🔥 Si trabajas tus descansos, haciendo 4 servicios diarios llegas a la meta 
+y te sobrarían aproximadamente <b>${margen}</b> servicios.
+</p>`;
+
+}
+else if(extraSim <= diasSimulados){
+
+let dias5Sim = extraSim;
+let dias4Sim = diasSimulados - dias5Sim;
+
+textoBase += `<p style="color:green">
+🔥 Trabajando descansos necesitarías 
+<b>${dias5Sim} día(s) haciendo 5 servicios</b> 
+y <b>${dias4Sim} día(s) haciendo 4 servicios</b>.
+</p>`;
+
+}
+else{
+
+textoBase += `<p style="color:red">
+⚠ Aún trabajando descansos necesitarías más de 5 servicios diarios.
+</p>`;
+
+}
+
+return textoBase;
+}
+    
 elegibles.sort((a,b)=> a.ritmoNecesario - b.ritmoNecesario);
 
 let mejor = elegibles[0] || null;
@@ -251,6 +300,9 @@ texto += `<p>Avance: ${f.avance} / ${f.meta} (${porcentajeAvance}%)</p>`;
 texto += `<p>Te faltan: ${f.faltante}</p>`;
 texto += `<p>Ritmo actual: ${ritmoActual} por día trabajado</p>`;
 texto += `<p>Ritmo necesario promedio: ${f.ritmoNecesario} por día restante</p>`;
+
+    // ===== APLICAR SIMULACIÓN A TODAS LAS FORMAS =====
+texto = agregarSimulacionDescansos(texto, f.faltante);
 
 // ================= PLAN INTELIGENTE FORMA 2 (100 TOTAL + 76 OS) =================
 if(f.nombre === "Forma 2" && f.elegible){
