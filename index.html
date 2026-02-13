@@ -186,27 +186,41 @@ Math.ceil(f.faltante / diasLaboralesRestantes) : 0;
 let elegibles = formas.filter(f => f.elegible);
 
 // ================= FUNCIÓN GLOBAL SIMULACIÓN DESCANSOS =================
-function agregarSimulacionDescansos(textoBase, faltanteServicios){
+function agregarSimulacionDescansos(textoBase, f){
 
-if(descansosFaltantes <= 0 || faltanteServicios <= 0){
+if(descansosFaltantes <= 0 || f.faltante <= 0){
+return textoBase;
+}
+
+// Solo aplicar a mejor y segunda
+if(
+!(mejor && f.nombre === mejor.nombre) &&
+!(segunda && f.nombre === segunda.nombre)
+){
 return textoBase;
 }
 
 let diasSimulados = diasLaboralesRestantes + descansosFaltantes;
+let ritmoNormal = f.ritmoNecesario;
+let ritmoSimulado = Math.ceil(f.faltante / diasSimulados);
+
+// Si no mejora, no mostrar nada
+if(ritmoSimulado >= ritmoNormal){
+return textoBase;
+}
+
 let serviciosBaseSim = diasSimulados * 4;
-let extraSim = faltanteServicios - serviciosBaseSim;
+let extraSim = f.faltante - serviciosBaseSim;
 
 textoBase += `<hr>`;
 textoBase += `<p style="color:#6a0dad"><b>🔎 Simulación trabajando tus ${descansosFaltantes} día(s) de descanso:</b></p>`;
+textoBase += `<p>Nuevo ritmo necesario: <b>${ritmoSimulado}</b> por día</p>`;
 textoBase += `<p>Total de días disponibles: <b>${diasSimulados}</b></p>`;
 
 if(extraSim <= 0){
 
-let margen = Math.abs(extraSim);
-
 textoBase += `<p style="color:green">
-🔥 Si trabajas tus descansos, haciendo 4 servicios diarios llegas a la meta 
-y te sobrarían aproximadamente <b>${margen}</b> servicios.
+🔥 Si trabajas descansos puedes cumplir la meta haciendo 4 servicios diarios.
 </p>`;
 
 }
@@ -216,22 +230,15 @@ let dias5Sim = extraSim;
 let dias4Sim = diasSimulados - dias5Sim;
 
 textoBase += `<p style="color:green">
-🔥 Trabajando descansos necesitarías 
-<b>${dias5Sim} día(s) haciendo 5 servicios</b> 
+🔥 Necesitarías <b>${dias5Sim} día(s) haciendo 5 servicios</b> 
 y <b>${dias4Sim} día(s) haciendo 4 servicios</b>.
-</p>`;
-
-}
-else{
-
-textoBase += `<p style="color:red">
-⚠ Aún trabajando descansos necesitarías más de 5 servicios diarios.
 </p>`;
 
 }
 
 return textoBase;
 }
+
     
 elegibles.sort((a,b)=> a.ritmoNecesario - b.ritmoNecesario);
 
@@ -425,7 +432,7 @@ texto += `<p style="color:green">Bono proporcional estimado: $${bonoEstimado.toF
 }
 
 // ===== AGREGAR SIMULACIÓN AL FINAL DE CADA FORMA =====
-texto = agregarSimulacionDescansos(texto, f.faltante);
+texto = agregarSimulacionDescansos(texto, f);
 
 texto += `</div>`;
 return texto;
